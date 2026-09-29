@@ -70,8 +70,7 @@ function renderCatalog() {
 function selectModel(c) {
   selectedModel = c.model;
   if (installedModels && !c.installed) {
-    if (!confirm(c.model + ' 미설치 — 노트북에서 pull 필요.
-계속 시도할까? (404 예상)')) {
+    if (!confirm(c.model + ' 미설치 — 노트북에서 pull 필요. 계속 시도할까? (404 예상)')) {
       renderCatalog();
       return;
     }
