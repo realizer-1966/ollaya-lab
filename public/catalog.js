@@ -175,7 +175,7 @@ async function refreshInstalled(srv, key) {
   }
 }
 
-export { CATALOG, DEFAULT_SRV, DEFAULT_KEY, refreshInstalled };
+export { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled };
 
 // node 단위테스트용 CommonJS (브라우저에서 무시됨)
 if (typeof module !== 'undefined' && module.exports) module.exports = { CATALOG, DEFAULT_SRV, DEFAULT_KEY, refreshInstalled };
