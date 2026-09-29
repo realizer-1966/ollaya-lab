@@ -52,7 +52,9 @@
       .timing { font-size: 0.78rem; color: #a89880; }
     </style>
   </head>
-  <body>
+  <body><div id="jse" style="position:fixed;bottom:8px;left:8px;right:8px;z-index:99;font-size:11px;color:#ff9d9d;white-space:pre-wrap;pointer-events:none;display:none"></div>
+<script>window.addEventListener('error',function(e){var d=document.getElementById('jse');if(d){d.style.display='block';d.textContent='JS오류: '+(e.message||e.type)+' @'+(e.lineno||'')+':'+(e.colno||'')}});
+window.addEventListener('unhandledrejection',function(e){var d=document.getElementById('jse');if(d){d.style.display='block';d.textContent='JS거부: '+((e.reason&&e.reason.message)||e.reason)}});</script>
     <div class="wrap">
       <h1><span class="mark">LAB</span>ollaya Decision Model Lab</h1>
       <div class="sub">레지스트리 전체 결정모델 × 질문 유형(choice/score/noul) 통합 테스트 — 노트북 서버(tailnet)에서 판정</div>
