@@ -1,5 +1,5 @@
 // ollaya Decision Model Lab — 서버 연결 + 카탈로그 + 질문 편집 + 판정
-import { CATALOG, DEFAULT_SRV, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js';
+import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js';
 
 const $ = (id) => document.getElementById(id);
 const srvurl = $('srvurl'), srvkey = $('srvkey'), connect = $('connect');
@@ -8,7 +8,7 @@ const run = $('run'), models = $('models');
 const qjson = $('qjson'), presetSel = $('preset');
 
 let srv = localStorage.getItem(LS_SRV) || DEFAULT_SRV;
-let key = localStorage.getItem(LS_KEY) || '';
+let key = localStorage.getItem(LS_KEY) || DEFAULT_KEY;
 let installedModels = null;
 let selectedModel = null;
 
@@ -17,9 +17,9 @@ srvkey.value = key;
 
 connect.addEventListener('click', async () => {
   srv = srvurl.value.trim().replace(/\/$/, '');
-  key = srvkey.value;
+  key = srvkey.value || DEFAULT_KEY;
   localStorage.setItem(LS_SRV, srv);
-  if (key) localStorage.setItem(LS_KEY, key); else localStorage.removeItem(LS_KEY);
+  if (key === DEFAULT_KEY) localStorage.removeItem(LS_KEY); else if (key) localStorage.setItem(LS_KEY, key);
   srvstatus.textContent = '연결 시도 중...';
   srvstatus.className = 'status';
   const res = await refreshInstalled(srv, key);
@@ -175,4 +175,4 @@ function renderResults(out, ms) {
 }
 
 renderCatalog();
-if (srv && key) connect.click();
+connect.click();  // srv·key 디폴트 내장 — 즉시 자동 연결

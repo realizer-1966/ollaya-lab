@@ -2,6 +2,7 @@
 // 노트북 서버에 설치 확인은 런타임에 /v1/models로. 여기는 레지스트리 전체 11 패밀리.
 
 const DEFAULT_SRV = 'http://100.71.1.74:11435';
+const DEFAULT_KEY = '#ys1217474!';
 const LS_KEY = 'ollaya-lab-server-key';
 const LS_SRV = 'ollaya-lab-server-url';
 
@@ -175,4 +176,4 @@ async function refreshInstalled(srv, key) {
 }
 
 // export (module)
-if (typeof module !== 'undefined') module.exports = { CATALOG, DEFAULT_SRV, refreshInstalled };
+if (typeof module !== 'undefined') module.exports = { CATALOG, DEFAULT_SRV, DEFAULT_KEY, refreshInstalled };
