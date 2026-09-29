@@ -157,11 +157,15 @@ const CATALOG = [
 
 // ---- 런타임 설치 상태 갱신 ----
 async function refreshInstalled(srv, key) {
+  window.__lastConnErr = '';
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (key) headers['Authorization'] = 'Bearer ' + key;
     const res = await fetch(srv + '/v1/models', { headers });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      window.__lastConnErr = 'HTTP ' + res.status;
+      return null;
+    }
     const j = await res.json();
     const installed = new Set((j.models ?? []).map((m) => m.name));
     const descs = Object.fromEntries((j.models ?? []).map((m) => [m.name, m.description]));
@@ -170,7 +174,8 @@ async function refreshInstalled(srv, key) {
       if (c.installed && descs[c.model]) c.desc = descs[c.model];
     }
     return installed;
-  } catch {
+  } catch (e) {
+    window.__lastConnErr = (e && e.message) ? e.message : String(e);
     return null;
   }
 }

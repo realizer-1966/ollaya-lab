@@ -8,6 +8,8 @@ const run = $('run'), models = $('models');
 const qjson = $('qjson'), presetSel = $('preset');
 
 let srv = localStorage.getItem(LS_SRV) || DEFAULT_SRV;
+// 구버전 http(폰트널 IP) 저장값 마이그레이션 — mixed content로 브라우저 fetch 불가
+if (srv.startsWith('http://')) srv = DEFAULT_SRV;
 let key = localStorage.getItem(LS_KEY) || DEFAULT_KEY;
 let installedModels = null;
 let selectedModel = null;
@@ -24,7 +26,7 @@ connect.addEventListener('click', async () => {
   srvstatus.className = 'status';
   const res = await refreshInstalled(srv, key);
   if (res === null) {
-    srvstatus.textContent = '연결 실패 — 서버 기동·IP·키 확인 (' + srv + ')';
+    srvstatus.textContent = '연결 실패 — ' + (window.__lastConnErr || '네트워크') + ' (' + srv + ')';
     srvstatus.className = 'status err';
     return;
   }
