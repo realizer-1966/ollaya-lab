@@ -90,22 +90,72 @@ function updateRunBtn() {
   run.textContent = hasSel ? '판정 (' + selectedModel + ')' : '모델 선택 + 연결 후 판정';
 }
 
-const PRESETS = {};
+// ---- 프리셋: 내장(카탈로그 defaultQuestions) + 사용자 저장(localStorage) ----
+const LS_PRESETS = 'lab-presets';
+const BUILTIN = {};
 for (const c of CATALOG) {
-  if (c.defaultQuestions) PRESETS[c.model.split(':')[0]] = c.defaultQuestions;
+  if (c.defaultQuestions) BUILTIN[c.model.split(':')[0]] = c.defaultQuestions;
 }
-for (const n of Object.keys(PRESETS)) {
-  const opt = document.createElement('option');
-  opt.value = n; opt.textContent = n + ' 프리셋';
-  presetSel.appendChild(opt);
+// 범용 내장 프리셋 — 질문셋 없는 모델(decider·kev·nli·gliclass 등)에서도 활용 가능
+if (!BUILTIN['범용']) BUILTIN['범용'] = {
+  intent: { type: 'choice', instructions: '핵심 요청은?', criteria: { refund: '환불', bug: '버그', feature: '기능요청', other: '기타' } },
+  urgency: { type: 'score', instructions: '긴급도?', rating: ['상시', '높음', '중간', '낮음'] },
+};
+if (!BUILTIN['감정']) BUILTIN['감정'] = BUILTIN['범용'];
+
+function loadCustomPresets() {
+  try { return JSON.parse(localStorage.getItem(LS_PRESETS) || '{}'); } catch { return {}; }
 }
+function saveCustomPresets(p) { localStorage.setItem(LS_PRESETS, JSON.stringify(p)); }
+let PRESETS = Object.assign({}, BUILTIN, loadCustomPresets());
+
+function renderPresets() {
+  PRESETS = Object.assign({}, BUILTIN, loadCustomPresets());
+  const cur = presetSel.value;
+  presetSel.innerHTML = '';
+  for (const n of Object.keys(PRESETS)) {
+    const opt = document.createElement('option');
+    const isCustom = !!loadCustomPresets()[n];
+    opt.value = n; opt.textContent = (isCustom ? '⭐ ' : '') + n + ' 프리셋';
+    presetSel.appendChild(opt);
+  }
+  if (cur && PRESETS[cur]) presetSel.value = cur;
+}
+renderPresets();
+
 $('loadpreset').addEventListener('click', () => {
   const n = presetSel.value;
   if (n && PRESETS[n]) qjson.value = JSON.stringify(PRESETS[n], null, 2);
 });
 $('reset').addEventListener('click', () => {
   const fam = selectedModel?.split(':')[0];
-  if (fam && PRESETS[fam]) qjson.value = JSON.stringify(PRESETS[fam], null, 2);
+  const src = (fam && PRESETS[fam]) || PRESETS['범용'];
+  qjson.value = JSON.stringify(src ?? {}, null, 2);
+});
+$('savepreset').addEventListener('click', () => {
+  const n = ($('pname').value || '').trim();
+  if (!n) { status.textContent = '프리셋 이름을 입력하세요'; status.className = 'status err'; return; }
+  let q;
+  try { q = JSON.parse(qjson.value); } catch (e) { status.textContent = '질문 JSON 오류: ' + e.message; status.className = 'status err'; return; }
+  const custom = loadCustomPresets();
+  custom[n] = q;
+  saveCustomPresets(custom);
+  renderPresets();
+  presetSel.value = n;
+  status.textContent = '프리셋 저장됨 — ' + n;
+  status.className = 'status';
+});
+$('delpreset').addEventListener('click', () => {
+  const n = presetSel.value;
+  if (!n) return;
+  if (BUILTIN[n]) { status.textContent = '내장 프리셋은 삭제 불가 (사용자 저장만 삭제)'; status.className = 'status err'; return; }
+  const custom = loadCustomPresets();
+  if (!custom[n]) { status.textContent = '삭제할 저장 프리셋이 아님'; status.className = 'status err'; return; }
+  delete custom[n];
+  saveCustomPresets(custom);
+  renderPresets();
+  status.textContent = '프리셋 삭제됨 — ' + n;
+  status.className = 'status';
 });
 
 run.addEventListener('click', async () => {

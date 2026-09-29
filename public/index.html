@@ -79,6 +79,9 @@ window.addEventListener('unhandledrejection',function(e){var d=document.getEleme
           <select id="preset"></select>
           <button class="ghost" id="loadpreset">불러오기</button>
           <button class="ghost" id="reset">초기화</button>
+          <input id="pname" placeholder="프리셋 이름" style="max-width:120px">
+          <button class="ghost" id="savepreset">저장</button>
+          <button class="ghost" id="delpreset">삭제</button>
         </div>
         <textarea id="qjson" spellcheck="false"></textarea>
         <div class="hint">type: choice(criteria 객체/배열) · score(순서 레벨 배열) · noul(명제). 모델에 임베디드 질문셋이 있으면(Qwen3Guard 등) 비우면 임베디드 사용.</div>
