@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#14100b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Lab" />
+    <title>olllaya Lab</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, sans-serif; background: #14100b; color: #ece7df; }
+      .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 1.25rem; margin: 0 0 2px; color: #f0b429; letter-spacing: 0.02em; }
+      h1 .mark { display:inline-block; background:#f0b429; color:#14100b; border-radius:6px; padding:0 6px; margin-right:6px; font-weight:900; }
+      .sub { color: #a89880; font-size: 0.85rem; margin-bottom: 14px; }
+      textarea { width: 100%; min-height: 96px; background: #1d1812; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 12px; font-size: 15px; }
+      #qjson { min-height: 200px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
+      .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+      select, input { background: #1d1812; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+      select { flex: 1; min-width: 210px; }
+      input #srvkey { width: 150px; }
+      .srvrow input { width: 170px; }
+      #srvkey { width: 160px; padding: 8px 10px; font-size: 13px; }
+      .ghost { background: #241d15; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
+      .btn { display: inline-block; background: #f0b429; color: #14100b; border: 0; border-radius: 10px; padding: 12px 22px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+      .btn[disabled] { opacity: 0.45; cursor: default; }
+      .status { margin-top: 12px; font-size: 0.85rem; color: #a89880; white-space: pre-line; }
+      .status.err { color: #ff726f; }
+      .card { background: #1d1812; border: 1px solid #3a3126; border-radius: 12px; padding: 14px; margin-top: 12px; }
+      .family { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #f0b429; font-weight: 700; }
+      .qname { font-weight: 700; color: #f0b429; }
+      .prob { height: 10px; background: #2a2118; border-radius: 6px; overflow: hidden; margin: 6px 0 10px; }
+      .prob span { display: block; height: 100%; background: #f0b429; }
+      .label { font-size: 0.85rem; }
+      .conf { color: #a89880; font-size: 0.8rem; }
+      .badge { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+      .badge.ok { background: #24421f; color: #9ee493; }
+      .badge.missing { background: #4a2a20; color: #ffab8f; }
+      .mcard { border: 1px solid #3a3126; border-radius: 12px; padding: 12px 14px; margin-top: 10px; cursor: pointer; }
+      .mcard:hover { border-color: #f0b429; }
+      .mcard.sel { border-color: #f0b429; background: #241d15; }
+      .mcard.missing { opacity: 0.55; }
+      .mname { font-weight: 700; font-size: 0.95rem; }
+      .mdesc { color: #a89880; font-size: 0.82rem; margin: 4px 0; line-height: 1.45; }
+      .mtags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: #a89880; font-size: 0.9rem; user-select: none; }
+      .hint { color: #a89880; font-size: 0.78rem; margin-top: 6px; line-height: 1.45; }
+      .timing { font-size: 0.78rem; color: #a89880; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1><span class="mark">LAB</span>ollaya Decision Model Lab</h1>
+      <div class="sub">레지스트리 전체 결정모델 × 질문 유형(choice/score/noul) 통합 테스트 — 노트북 서버(tailnet)에서 판정</div>
+
+      <div class="row srvrow">
+        <input id="srvurl" placeholder="서버 URL" title="olllaya daemon URL (tailnet IP)">
+        <input id="srvkey" type="password" placeholder="서버 키" title="OLLAYA_API_KEY">
+        <button class="ghost" id="connect">연결</button>
+      </div>
+      <div class="status" id="srvstatus"></div>
+
+      <div id="models"></div>
+
+      <textarea id="text" placeholder="판정할 텍스트를 입력하세요 (한국어/영어/온디바이스…)&#10;예: Users cannot login, this is blocking production!"></textarea>
+      <button class="btn" id="run" disabled>모델 선택 + 연결 후 판정</button>
+      <div class="status" id="status"></div>
+      <div id="results"></div>
+
+      <details id="qpanel">
+        <summary><b>질문 편집</b> — 판정에 쓸 질문셋 (JSON)</summary>
+        <div class="row">
+          <select id="preset"></select>
+          <button class="ghost" id="loadpreset">불러오기</button>
+          <button class="ghost" id="reset">초기화</button>
+        </div>
+        <textarea id="qjson" spellcheck="false"></textarea>
+        <div class="hint">type: choice(criteria 객체/배열) · score(순서 레벨 배열) · noul(명제). 모델에 임베디드 질문셋이 있으면(Qwen3Guard 등) 비우면 임베디드 사용.</div>
+      </details>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
