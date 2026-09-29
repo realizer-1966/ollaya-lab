@@ -1,7 +1,7 @@
 // ollaya Decision Model Lab — 카탈로그
 // 노트북 서버에 설치 확인은 런타임에 /v1/models로. 여기는 레지스트리 전체 11 패밀리.
 
-const DEFAULT_SRV = 'http://100.71.1.74:11435';
+const DEFAULT_SRV = 'https://dydtn.tailc2a754.ts.net';
 const DEFAULT_KEY = '#ys1217474!';
 const LS_KEY = 'ollaya-lab-server-key';
 const LS_SRV = 'ollaya-lab-server-url';
