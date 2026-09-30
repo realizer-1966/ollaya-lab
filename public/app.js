@@ -1,5 +1,5 @@
 // ollaya Decision Model Lab — 서버 연결 + 카탈로그 + 질문 편집 + 판정
-import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js?v=2';
+import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js?v=3';
 
 const $ = (id) => document.getElementById(id);
 const srvurl = $('srvurl'), srvkey = $('srvkey'), connect = $('connect');
@@ -38,14 +38,14 @@ connect.addEventListener('click', async () => {
 
 function badge(c) {
   if (installedModels === null) return '<span class="badge missing">연결 필요</span>';
-  if (c.custom) return c.installed ? '<span class="badge ok">내 모델</span>' : '<span class="badge missing">삭제됨</span>';
+  if (c.mine) return c.installed ? '<span class="badge ok">내 모델</span>' : '<span class="badge missing">삭제됨</span>';
   return c.installed ? '<span class="badge ok">설치됨</span>' : '<span class="badge missing">pull 필요</span>';
 }
 
 function renderCatalog() {
   models.innerHTML = '';
-  const customs = CATALOG.filter((c) => c.custom);
-  const rest = CATALOG.filter((c) => !c.custom);
+  const customs = CATALOG.filter((c) => c.mine);
+  const rest = CATALOG.filter((c) => !c.mine);
   const groups = [];
   if (customs.length) groups.push({ label: '내 모델 — 데몬에서 생성 (' + customs.length + '개)', cards: customs });
   const fams = [...new Set(rest.map((c) => c.family))];
@@ -82,8 +82,8 @@ async function selectModel(c) {
     }
   }
   renderCatalog();
-  if (c.custom) {
-    // 커스텀 모델: /api/show로 내장 질문셋(QUESTIONS)을 가져와 채운다
+  if (c.dyn) {
+    // 데몬 동적 모델(커스텀·레지스트리 변형): /api/show로 내장 질문셋(QUESTIONS)을 가져와 채운다
     status.textContent = selectedModel + ' — 내장 질문셋 로드 중...';
     status.className = 'status';
     try {

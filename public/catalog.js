@@ -170,20 +170,24 @@ async function refreshInstalled(srv, key) {
     const j = await res.json();
     const tags = (await resTags.json()).models ?? [];
     const descs = Object.fromEntries((j.models ?? []).map((m) => [m.name, m.description]));
-    // 데몬(레지스트리)에만 있는 커스텀 모델 → 카탈로그에 동적 추가. 재연결 시 이전 추가분 제거 후 재구성.
-    for (let i = CATALOG.length - 1; i >= 0; i--) if (CATALOG[i].custom) CATALOG.splice(i, 1);
+    // 데몬에만 있는 모델 → 카탈로그에 동적 추가(dyn). 커스텀 판정은 이름이 아니라
+    // parent_model(생성 계보 — /api/create로 만든 파생 모델만 가짐) 기준.
+    // parent 없음 + 카탈로그 누락분(예: decider:latest)은 레지스트리 변형으로 일반 패밀리 그룹에.
+    for (let i = CATALOG.length - 1; i >= 0; i--) if (CATALOG[i].dyn) CATALOG.splice(i, 1);
     for (const m of tags) {
       if (CATALOG.some((c) => c.model === m.name)) continue;
       const d = m.details ?? {};
+      const parent = d.parent_model || '';
       CATALOG.push({
         family: d.family || m.name.split(':')[0],
         model: m.name,
-        custom: true,
-        desc: descs[m.name] || ('데몬 생성 모델 (베이스: ' + (d.parent_model || '?') + ')'),
+        dyn: true,
+        mine: !!parent,
+        desc: descs[m.name] || (parent ? ('데몬 생성 모델 (베이스: ' + parent + ')') : '레지스트리 모델 (카탈로그 누락분)'),
         engine: d.format === 'gguf' ? 'llama' : (d.format === 'onnx' ? 'onnx' : (d.format || '?')),
         maxOptions: null,
         questions: null,
-        parent: d.parent_model || '',
+        parent: parent,
       });
     }
     const installed = new Set(tags.map((m) => m.name));
