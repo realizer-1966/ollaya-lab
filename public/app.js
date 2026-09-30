@@ -42,6 +42,37 @@ function badge(c) {
   return c.installed ? '<span class="badge ok">설치됨</span>' : '<span class="badge missing">pull 필요</span>';
 }
 
+async function attachDelete(card, c) {
+  const btn = card.querySelector('.delbtn');
+  if (!btn) return;
+  btn.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    if (!confirm(c.model + ' 을(를) 데몬에서 삭제할까?\n베이스 모델은 유지되며, 되돌릴 수 없습니다.')) return;
+    status.textContent = '삭제 중... ' + c.model;
+    status.className = 'status';
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+      const res = await fetch(srv + '/api/delete', { method: 'DELETE', headers, body: JSON.stringify({ model: c.model }) });
+      if (res.ok || res.status === 404) {
+        status.textContent = '삭제됨 — ' + c.model + (res.status === 404 ? ' (이미 없음)' : '');
+        const inst = await refreshInstalled(srv, key);
+        installedModels = inst;
+        if (selectedModel === c.model) { selectedModel = null; updateRunBtn(); }
+        renderCatalog();
+      } else {
+        let msg = res.status;
+        try { const e = await res.json(); msg = e.error || e.code || msg; } catch {}
+        status.textContent = '삭제 실패: ' + msg;
+        status.className = 'status err';
+      }
+    } catch (e) {
+      status.textContent = '삭제 오류: ' + e.message;
+      status.className = 'status err';
+    }
+  });
+}
+
 function renderCatalog() {
   models.innerHTML = '';
   const customs = CATALOG.filter((c) => c.mine);
@@ -61,7 +92,9 @@ function renderCatalog() {
       const card = document.createElement('div');
       card.className = 'mcard' + (installedModels && !c.installed ? ' missing' : '') + (selectedModel === c.model ? ' sel' : '');
       card.innerHTML =
-        '<div class="mname">' + c.model + ' ' + badge(c) + '</div>' +
+        '<div class="mname">' + c.model + ' ' + badge(c) +
+        (c.mine ? '<button class="delbtn" data-model="' + c.model + '" title="데몬에서 이 모델 삭제 (베이스는 유지)" style="float:right;background:none;border:none;cursor:pointer;font-size:15px;padding:0 2px;line-height:1">🗑</button>' : '') +
+        '</div>' +
         '<div class="mdesc">' + c.desc + '</div>' +
         '<div class="mtags conf">' +
           'engine=' + c.engine + ' · 최대옵션=' + (c.maxOptions ?? '?') +
@@ -69,6 +102,7 @@ function renderCatalog() {
         (c.tips ? '<div class="hint">' + c.tips + '</div>' : '');
       card.addEventListener('click', () => selectModel(c));
       models.appendChild(card);
+      if (c.mine) attachDelete(card, c);
     }
   }
 }
