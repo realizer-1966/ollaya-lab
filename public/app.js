@@ -1,5 +1,5 @@
 // ollaya Decision Model Lab — 서버 연결 + 카탈로그 + 질문 편집 + 판정
-import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js';
+import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } from './catalog.js?v=2';
 
 const $ = (id) => document.getElementById(id);
 const srvurl = $('srvurl'), srvkey = $('srvkey'), connect = $('connect');
@@ -38,20 +38,26 @@ connect.addEventListener('click', async () => {
 
 function badge(c) {
   if (installedModels === null) return '<span class="badge missing">연결 필요</span>';
+  if (c.custom) return c.installed ? '<span class="badge ok">내 모델</span>' : '<span class="badge missing">삭제됨</span>';
   return c.installed ? '<span class="badge ok">설치됨</span>' : '<span class="badge missing">pull 필요</span>';
 }
 
 function renderCatalog() {
   models.innerHTML = '';
-  const fams = [...new Set(CATALOG.map((c) => c.family))];
-  for (const fam of fams) {
-    const famCards = CATALOG.filter((c) => c.family === fam);
+  const customs = CATALOG.filter((c) => c.custom);
+  const rest = CATALOG.filter((c) => !c.custom);
+  const groups = [];
+  if (customs.length) groups.push({ label: '내 모델 — 데몬에서 생성 (' + customs.length + '개)', cards: customs });
+  const fams = [...new Set(rest.map((c) => c.family))];
+  for (const fam of fams) groups.push({ label: fam + ' — ' + rest.filter((c) => c.family === fam).length + '개', cards: rest.filter((c) => c.family === fam) });
+  for (const g of groups) {
+    const gCards = g.cards;
     const head = document.createElement('div');
     head.className = 'family';
     head.style.marginTop = '14px';
-    head.textContent = fam + ' — ' + famCards.length + '개';
+    head.textContent = g.label;
     models.appendChild(head);
-    for (const c of famCards) {
+    for (const c of gCards) {
       const card = document.createElement('div');
       card.className = 'mcard' + (installedModels && !c.installed ? ' missing' : '') + (selectedModel === c.model ? ' sel' : '');
       card.innerHTML =
@@ -67,21 +73,40 @@ function renderCatalog() {
   }
 }
 
-function selectModel(c) {
+async function selectModel(c) {
   selectedModel = c.model;
   if (installedModels && !c.installed) {
-    if (!confirm(c.model + ' 미설치 — 노트북에서 pull 필요. 계속 시도할까? (404 예상)')) {
+    if (!confirm(c.model + ' 미설치 — 데몬에 없음. 계속 시도할까? (404 예상)')) {
       renderCatalog();
       return;
     }
   }
   renderCatalog();
-  if (c.defaultQuestions) {
+  if (c.custom) {
+    // 커스텀 모델: /api/show로 내장 질문셋(QUESTIONS)을 가져와 채운다
+    status.textContent = selectedModel + ' — 내장 질문셋 로드 중...';
+    status.className = 'status';
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+      const res = await fetch(srv + '/api/show', { method: 'POST', headers, body: JSON.stringify({ model: c.model }) });
+      const j = await res.json();
+      if (res.ok && j.questions && Object.keys(j.questions).length) {
+        qjson.value = JSON.stringify(j.questions, null, 2);
+        status.textContent = selectedModel + ' 선택됨 — 내장 질문셋 로드됨';
+      } else {
+        status.textContent = selectedModel + ' 선택됨 (내장 질문셋 없음 — 질문을 직접 입력하거나 프리셋을 고르세요)';
+      }
+    } catch (e) {
+      status.textContent = '질문셋 로드 실패: ' + e.message;
+      status.className = 'status err';
+    }
+  } else if (c.defaultQuestions) {
     qjson.value = JSON.stringify(c.defaultQuestions, null, 2);
   }
   updateRunBtn();
-  status.textContent = selectedModel + ' 선택됨';
-  status.className = 'status';
+  if (!status.className.includes('err')) status.className = 'status';
+  if (!status.textContent.includes('선택됨') && !status.textContent.includes('실패')) status.textContent = selectedModel + ' 선택됨';
 }
 
 function updateRunBtn() {

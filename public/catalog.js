@@ -161,14 +161,32 @@ async function refreshInstalled(srv, key) {
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (key) headers['Authorization'] = 'Bearer ' + key;
-    const res = await fetch(srv + '/v1/models', { headers });
-    if (!res.ok) {
-      window.__lastConnErr = 'HTTP ' + res.status;
-      return null;
-    }
+    const [res, resTags] = await Promise.all([
+      fetch(srv + '/v1/models', { headers }),
+      fetch(srv + '/api/tags', { headers }),
+    ]);
+    if (!res.ok) { window.__lastConnErr = 'HTTP ' + res.status; return null; }
+    if (!resTags.ok) { window.__lastConnErr = 'HTTP ' + resTags.status + ' (api/tags)'; return null; }
     const j = await res.json();
-    const installed = new Set((j.models ?? []).map((m) => m.name));
+    const tags = (await resTags.json()).models ?? [];
     const descs = Object.fromEntries((j.models ?? []).map((m) => [m.name, m.description]));
+    // 데몬(레지스트리)에만 있는 커스텀 모델 → 카탈로그에 동적 추가. 재연결 시 이전 추가분 제거 후 재구성.
+    for (let i = CATALOG.length - 1; i >= 0; i--) if (CATALOG[i].custom) CATALOG.splice(i, 1);
+    for (const m of tags) {
+      if (CATALOG.some((c) => c.model === m.name)) continue;
+      const d = m.details ?? {};
+      CATALOG.push({
+        family: d.family || m.name.split(':')[0],
+        model: m.name,
+        custom: true,
+        desc: descs[m.name] || ('데몬 생성 모델 (베이스: ' + (d.parent_model || '?') + ')'),
+        engine: d.format === 'gguf' ? 'llama' : (d.format === 'onnx' ? 'onnx' : (d.format || '?')),
+        maxOptions: null,
+        questions: null,
+        parent: d.parent_model || '',
+      });
+    }
+    const installed = new Set(tags.map((m) => m.name));
     for (const c of CATALOG) {
       c.installed = installed.has(c.model);
       if (c.installed && descs[c.model]) c.desc = descs[c.model];
