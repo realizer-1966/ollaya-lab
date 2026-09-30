@@ -62,12 +62,15 @@ window.addEventListener('unhandledrejection',function(e){var d=document.getEleme
       <h1><span class="mark">LAB</span>ollaya Decision Model Lab</h1>
       <div class="sub">레지스트리 전체 결정모델 × 질문 유형(choice/score/noul) 통합 테스트 — 노트북 서버(tailnet)에서 판정</div>
 
-      <div class="row srvrow">
-        <input id="srvurl" placeholder="서버 URL" title="olllaya daemon URL (tailnet IP)">
-        <input id="srvkey" type="password" placeholder="서버 키" title="OLLAYA_API_KEY">
-        <button class="ghost" id="connect">연결</button>
-      </div>
-      <div class="status" id="srvstatus"></div>
+      <details id="srvpanel">
+        <summary><b>서버 설정</b></summary>
+        <div class="row srvrow">
+          <input id="srvurl" placeholder="서버 URL" title="olllaya daemon URL (tailnet IP)">
+          <input id="srvkey" type="password" placeholder="서버 키" title="OLLAYA_API_KEY">
+          <button class="ghost" id="connect">연결</button>
+        </div>
+        <div class="status" id="srvstatus"></div>
+      </details>
 
       <div id="models"></div>
 
@@ -90,7 +93,7 @@ window.addEventListener('unhandledrejection',function(e){var d=document.getEleme
         <div class="hint">type: choice(criteria 객체/배열) · score(순서 레벨 배열) · noul(명제). 모델에 임베디드 질문셋이 있으면(Qwen3Guard 등) 비우면 임베디드 사용.</div>
       </details>
     </div>
-    <script type="module" src="/app.js?v=4"></script>
+    <script type="module" src="/app.js?v=5"></script>
   <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   </script>

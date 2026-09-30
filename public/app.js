@@ -3,6 +3,7 @@ import { CATALOG, DEFAULT_SRV, DEFAULT_KEY, LS_KEY, LS_SRV, refreshInstalled } f
 
 const $ = (id) => document.getElementById(id);
 const srvurl = $('srvurl'), srvkey = $('srvkey'), connect = $('connect');
+const hasSrvUI = !!connect;   // 서버 설정 UI 접힘/존재 어느 쪽이든 동작
 const srvstatus = $('srvstatus'), status = $('status');
 const run = $('run'), models = $('models');
 const qjson = $('qjson'), presetSel = $('preset');
@@ -14,10 +15,10 @@ let key = localStorage.getItem(LS_KEY) || DEFAULT_KEY;
 let installedModels = null;
 let selectedModel = null;
 
-srvurl.value = srv;
-srvkey.value = key;
+if (srvurl) srvurl.value = srv;
+if (srvkey) srvkey.value = key;
 
-connect.addEventListener('click', async () => {
+hasSrvUI && connect.addEventListener('click', async () => {
   srv = srvurl.value.trim().replace(/\/$/, '');
   key = srvkey.value || DEFAULT_KEY;
   localStorage.setItem(LS_SRV, srv);
@@ -285,4 +286,11 @@ function renderResults(out, ms) {
 }
 
 renderCatalog();
-connect.click();  // srv·key 디폴트 내장 — 즉시 자동 연결
+(async () => {  // 부팅 자동 연결 — UI 유무 무관
+  const res = await refreshInstalled(srv, key);
+  if (res) { installedModels = res; srvstatus.textContent = '연결됨 — ' + srv + ' (' + res.size + ' 모델)'; }
+  else srvstatus.textContent = '연결 실패 — ' + (window.__lastConnErr || '네트워크') + ' (' + srv + ')';
+  if (res) { srvstatus.className = 'status'; } else { srvstatus.className = 'status err'; }
+  renderCatalog();
+  updateRunBtn();
+})();
