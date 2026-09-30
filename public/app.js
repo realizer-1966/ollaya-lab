@@ -35,6 +35,7 @@ hasSrvUI && connect.addEventListener('click', async () => {
   srvstatus.textContent = '연결됨 — ' + srv + ' (' + res.size + ' 모델 설치됨)';
   renderCatalog();
   updateRunBtn();
+  if (typeof refreshCreatePanel === 'function') refreshCreatePanel();
 });
 
 function badge(c) {
@@ -61,6 +62,7 @@ async function attachDelete(card, c) {
         installedModels = inst;
         if (selectedModel === c.model) { selectedModel = null; updateRunBtn(); }
         renderCatalog();
+        if (typeof refreshCreatePanel === 'function') refreshCreatePanel();
       } else {
         let msg = res.status;
         try { const e = await res.json(); msg = e.error || e.code || msg; } catch {}
@@ -293,4 +295,80 @@ renderCatalog();
   if (res) { srvstatus.className = 'status'; } else { srvstatus.className = 'status err'; }
   renderCatalog();
   updateRunBtn();
+  if (typeof refreshCreatePanel === 'function') refreshCreatePanel();
 })();
+
+// ---- ✚ 새 모델 만들기 (데몬 /api/create) ----
+const cmodel = $('cmodel'), cbase = $('cbase'), cdesc = $('cdesc'),
+      cquestions = $('cquestions'), ccreate = $('ccreate'), cfromq = $('cfromq'), cstatus = $('cstatus');
+
+function fillBases() {
+  const prev = cbase.value;
+  cbase.innerHTML = '';
+  const installed = CATALOG.filter((c) => c.installed && !c.mine);
+  const list = installed.length ? installed : CATALOG.filter((c) => !c.mine);
+  for (const c of list) {
+    const o = document.createElement('option');
+    o.value = c.model;
+    o.textContent = c.model + (c.mine ? ' (내 모델)' : '');
+    cbase.appendChild(o);
+  }
+  // laya:multilingual(한글 가능 베이스) 기본 우선 선택
+  const pref = [...cbase.options].find((o) => o.value === 'laya:multilingual');
+  if (pref) cbase.value = 'laya:multilingual';
+  else if (prev && [...cbase.options].some((o) => o.value === prev)) cbase.value = prev;
+}
+
+function refreshCreatePanel() {
+  if (!ccreate) return;
+  fillBases();
+  ccreate.disabled = !installedModels;
+  if (!installedModels) cstatus.textContent = '먼저 서버에 연결되면 활성화된다';
+}
+
+if (ccreate) {
+  ccreate.addEventListener('click', async () => {
+    const name = (cmodel.value || '').trim();
+    const base = cbase.value;
+    if (!name) { cstatus.textContent = '모델 이름을 입력하세요'; cstatus.className = 'status err'; return; }
+    if (!/^[a-z0-9][a-z0-9._:-]*$/i.test(name)) { cstatus.textContent = '이름은 영문·숫·._:- 조합만 허용'; cstatus.className = 'status err'; return; }
+    let questions;
+    const raw = cquestions.value.trim();
+    if (raw) {
+      try { questions = JSON.parse(raw); } catch (e) { cstatus.textContent = '질문 JSON 오류: ' + e.message; cstatus.className = 'status err'; return; }
+      if (!questions || typeof questions !== 'object' || Array.isArray(questions) || !Object.keys(questions).length) {
+        cstatus.textContent = '질문셋은 1개 이상의 객체'; cstatus.className = 'status err'; return;
+      }
+    }
+    ccreate.disabled = true;
+    cstatus.textContent = '생성 중... ' + name + ' (베이스: ' + base + ')';
+    cstatus.className = 'status';
+    const body = { model: name, from: base };
+    if (raw) body.questions = questions;
+    if (cdesc.value.trim()) body.description = cdesc.value.trim();
+    const headers = { 'Content-Type': 'application/json' };
+    if (key) headers['Authorization'] = 'Bearer ' + key;
+    try {
+      const res = await fetch(srv + '/api/create', { method: 'POST', headers, body: JSON.stringify(body) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error('서버 ' + res.status + (j.error ? ' — ' + (j.error.message || j.error) : ''));
+      cstatus.textContent = '생성 완료 — ' + name + '. 카탈로그 갱신 중...';
+      const inst = await refreshInstalled(srv, key);
+      installedModels = inst;
+      srvstatus.textContent = '연결됨 — ' + srv + ' (' + (inst ? inst.size : '?') + ' 모델)';
+      renderCatalog();
+      updateRunBtn();
+      cstatus.textContent = '생성 완료 — ' + name + ' (카탈로그 "내 모델" 그룹에 추가됨)';
+    } catch (e) {
+      cstatus.textContent = '생성 실패: ' + e.message;
+      cstatus.className = 'status err';
+    }
+    ccreate.disabled = false;
+  });
+  cfromq.addEventListener('click', () => {
+    const src = qjson.value.trim();
+    if (!src) { cstatus.textContent = '질문 편집기(qjson)가 비어있다'; cstatus.className = 'status err'; return; }
+    try { JSON.parse(src); cquestions.value = JSON.stringify(JSON.parse(src), null, 2); cstatus.textContent = '질문 편집기 내용 붙여넣음'; cstatus.className = 'status'; }
+    catch (e) { cstatus.textContent = '질문 편집기 JSON 오류: ' + e.message; cstatus.className = 'status err'; }
+  });
+}

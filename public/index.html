@@ -21,10 +21,10 @@
       .sub { color: #a89880; font-size: 0.85rem; margin-bottom: 14px; }
       textarea { width: 100%; min-height: 96px; background: #1d1812; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 12px; font-size: 15px; }
       #qjson { min-height: 200px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
+      #cquestions { min-height: 110px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; margin-top: 8px; }
       .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
       select, input { background: #1d1812; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
       select { flex: 1; min-width: 210px; }
-      input #srvkey { width: 150px; }
       .srvrow input { width: 170px; }
       #srvkey { width: 160px; padding: 8px 10px; font-size: 13px; }
       .ghost { background: #241d15; color: #ece7df; border: 1px solid #3a3126; border-radius: 10px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
@@ -72,6 +72,22 @@ window.addEventListener('unhandledrejection',function(e){var d=document.getEleme
         <div class="status" id="srvstatus"></div>
       </details>
 
+      <details id="cpanel">
+        <summary><b>✚ 새 모델 만들기</b> — 데몬에 질문셋 담긴 파생 모델 생성</summary>
+        <div class="row">
+          <input id="cmodel" placeholder="새 모델 이름 (예: ys-triage2)" style="flex:1;min-width:180px">
+          <select id="cbase" style="flex:1;min-width:180px"></select>
+        </div>
+        <input id="cdesc" placeholder="설명 (선택 — 모델 카드에 표시)" style="width:100%;margin-top:8px">
+        <textarea id="cquestions" spellcheck="false" placeholder="질문셋 JSON (비우면 베이스에 내장된 질문셋 사용)"></textarea>
+        <div class="row">
+          <button class="btn" id="ccreate" style="margin-top:0">만들기</button>
+          <button class="ghost" id="cfromq">아래 질문 편집기에서 복사</button>
+        </div>
+        <div class="status" id="cstatus"></div>
+        <div class="hint">베이스는 이미 풀린 모델만 가능(추가 다운로드 없음, 생성 수초). 질문셋 형식: type=choice(criteria 맵) · score(배열 2~10 단계) · noul(criteria 생략 가능). 생성된 모델은 위 카탈로그 <b>내 모델</b> 그룹에 자동 등장한다.</div>
+      </details>
+
       <div id="models"></div>
 
       <textarea id="text" placeholder="판정할 텍스트를 입력하세요 (한국어/영어/온디바이스…)&#10;예: Users cannot login, this is blocking production!"></textarea>
@@ -93,7 +109,7 @@ window.addEventListener('unhandledrejection',function(e){var d=document.getEleme
         <div class="hint">type: choice(criteria 객체/배열) · score(순서 레벨 배열) · noul(명제). 모델에 임베디드 질문셋이 있으면(Qwen3Guard 등) 비우면 임베디드 사용.</div>
       </details>
     </div>
-    <script type="module" src="/app.js?v=5"></script>
+    <script type="module" src="/app.js?v=6"></script>
   <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   </script>
